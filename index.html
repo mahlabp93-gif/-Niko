@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="fa" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>نیکو</title>
+<style>
+body {
+  background: #101827;
+  color: white;
+  font-family: Tahoma, sans-serif;
+  text-align: center;
+  padding: 50px 15px;
+}
+.box {
+  background: #1e293b;
+  padding: 30px;
+  border-radius: 20px;
+  max-width: 450px;
+  margin: auto;
+}
+h1 { color: #38bdf8; }
+input {
+  padding: 12px;
+  width: 80%;
+  border-radius: 10px;
+  border: none;
+}
+button {
+  padding: 12px 25px;
+  margin-top: 15px;
+  border: none;
+  border-radius: 10px;
+  background: #0ea5e9;
+  color: white;
+  cursor: pointer;
+}
+</style>
+</head>
+<body>
+<div class="box">
+<h1>سلام! من نیکو هستم 🤖</h1>
+<p>دوست داری با هم صحبت کنیم؟</p>
+<input id="message" placeholder="اینجا برای نیکو بنویس...">
+<br>
+<button onclick="reply()">ارسال</button>
+<p id="answer"></p>
+</div>
+<script>
+function reply() {
+  let msg = document.getElementById("message").value;
+  document.getElementById("answer").innerText =
+    msg ? "سلام! من نیکو هستم. خوشحالم باهات صحبت می‌کنم ❤️" : "اول چیزی بنویس!";
+}
+</script>
+</body>
+</html>
