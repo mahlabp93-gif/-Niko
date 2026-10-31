@@ -1,56 +1,226 @@
+
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>نیکو</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#101827">
+<title>نیکو | دستیار هوشمند</title>
 <style>
-body {
-  background: #101827;
-  color: white;
-  font-family: Tahoma, sans-serif;
-  text-align: center;
-  padding: 50px 15px;
+*{box-sizing:border-box}
+body{
+margin:0;padding:15px;min-height:100vh;
+background:#101827;color:white;
+font-family:Tahoma,sans-serif
 }
-.box {
-  background: #1e293b;
-  padding: 30px;
-  border-radius: 20px;
-  max-width: 450px;
-  margin: auto;
+.app{
+max-width:650px;margin:20px auto;
+background:#1e293b;border:1px solid #334155;
+border-radius:22px;overflow:hidden
 }
-h1 { color: #38bdf8; }
-input {
-  padding: 12px;
-  width: 80%;
-  border-radius: 10px;
-  border: none;
+header{text-align:center;padding:25px;background:#172337}
+.avatar{font-size:48px}
+h1{color:#38bdf8}
+.status{color:#86efac;font-size:13px}
+#chat{height:430px;overflow-y:auto;padding:18px}
+.message{
+padding:13px 16px;border-radius:16px;
+margin:12px 0;line-height:2;
+max-width:90%;white-space:pre-wrap;
+overflow-wrap:anywhere
 }
-button {
-  padding: 12px 25px;
-  margin-top: 15px;
-  border: none;
-  border-radius: 10px;
-  background: #0ea5e9;
-  color: white;
-  cursor: pointer;
+.user{background:#075985;margin-right:auto}
+.niko{background:#334155;margin-left:auto}
+.controls{display:flex;gap:8px;padding:15px;background:#172337}
+input{
+flex:1;min-width:0;padding:14px;
+border-radius:12px;border:1px solid #475569;
+background:#0f172a;color:white;font-size:15px
 }
+button{
+padding:12px 15px;border:0;border-radius:12px;
+background:#0284c7;color:white;cursor:pointer
+}
+button:disabled{opacity:.5}
+.tools{
+display:flex;flex-wrap:wrap;justify-content:center;
+gap:10px;padding:5px 15px 20px
+}
+.tools button{background:#475569}
+.note{text-align:center;color:#94a3b8;font-size:12px;padding:0 15px 18px;line-height:2}
 </style>
 </head>
 <body>
-<div class="box">
-<h1>سلام! من نیکو هستم 🤖</h1>
-<p>دوست داری با هم صحبت کنیم؟</p>
-<input id="message" placeholder="اینجا برای نیکو بنویس...">
-<br>
-<button onclick="reply()">ارسال</button>
-<p id="answer"></p>
+<div class="app">
+<header>
+<div class="avatar">🤖</div>
+<h1>سلام! من نیکو هستم</h1>
+<div class="status">● آماده صحبت با تو هستم</div>
+</header>
+
+<div id="chat" aria-live="polite">
+<div class="message niko">
+سلام دوست من! ❤️
+من نیکو هستم.
+خوشحالم که اینجایی.
+دوست دارم بیشتر باهات آشنا بشم.
 </div>
+</div>
+
+<div class="controls">
+<input id="message" placeholder="اینجا برای نیکو بنویس...">
+<button id="send" onclick="sendMessage()">ارسال</button>
+</div>
+
+<div class="tools">
+<button onclick="startVoice()">🎤 صحبت با نیکو</button>
+<button onclick="toggleSpeech()" id="voiceButton">🔊 صدای نیکو روشن</button>
+<button onclick="clearMemory()">🗑 پاک کردن گفتگو</button>
+</div>
+
+<div class="note">
+صدای انتخابی: دخترانه، گرم و صمیمی، سرعت طبیعی
+<br>تاریخچه گفتگو در مرورگر ذخیره می‌شود.
+</div>
+</div>
+
 <script>
-function reply() {
-  let msg = document.getElementById("message").value;
-  document.getElementById("answer").innerText =
-    msg ? "سلام! من نیکو هستم. خوشحالم باهات صحبت می‌کنم ❤️" : "اول چیزی بنویس!";
+const chat=document.getElementById("chat");
+const input=document.getElementById("message");
+const send=document.getElementById("send");
+
+let voiceEnabled=true;
+let history=[];
+
+try{
+history=JSON.parse(localStorage.getItem("niko_history")||"[]");
+if(!Array.isArray(history))history=[];
+}catch{history=[];}
+
+function saveHistory(){
+try{
+localStorage.setItem("niko_history",JSON.stringify(history));
+}catch(e){}
+}
+
+function addMessage(text,who){
+const div=document.createElement("div");
+div.className="message "+who;
+div.textContent=text;
+chat.appendChild(div);
+chat.scrollTop=chat.scrollHeight;
+history.push({text,who});
+if(history.length>100)history=history.slice(-100);
+saveHistory();
+}
+
+function renderHistory(){
+history.forEach(item=>{
+const div=document.createElement("div");
+div.className="message "+item.who;
+div.textContent=item.text;
+chat.appendChild(div);
+});
+chat.scrollTop=chat.scrollHeight;
+}
+if(history.length)renderHistory();
+
+async function sendMessage(){
+const text=input.value.trim();
+if(!text||send.disabled)return;
+
+addMessage(text,"user");
+input.value="";
+send.disabled=true;
+send.textContent="...";
+
+try{
+const response=await fetch("/api/chat",{
+method:"POST",
+headers:{"Content-Type":"application/json"},
+body:JSON.stringify({
+message:text,
+history:history.slice(-20)
+})
+});
+
+if(!response.ok)throw new Error("Server unavailable");
+
+const data=await response.json();
+if(typeof data.reply!=="string")throw new Error("Invalid response");
+
+addMessage(data.reply,"niko");
+speak(data.reply);
+
+}catch(error){
+addMessage(
+"عزیزم، پیامت رو دریافت کردم ❤️ اما هنوز مغز هوشمند من به سرور متصل نشده. باید مرحله اتصال هوش مصنوعی رو تکمیل کنیم.",
+"niko"
+);
+}finally{
+send.disabled=false;
+send.textContent="ارسال";
+input.focus();
+}
+}
+
+input.addEventListener("keydown",event=>{
+if(event.key==="Enter")sendMessage();
+});
+
+function speak(text){
+if(!voiceEnabled||!("speechSynthesis" in window))return;
+
+speechSynthesis.cancel();
+const utterance=new SpeechSynthesisUtterance(text);
+utterance.lang="fa-IR";
+utterance.rate=1;
+utterance.pitch=1.08;
+utterance.volume=1;
+
+const voices=speechSynthesis.getVoices();
+const persianVoice=voices.find(v=>
+v.lang.toLowerCase().startsWith("fa")
+);
+if(persianVoice)utterance.voice=persianVoice;
+
+speechSynthesis.speak(utterance);
+}
+
+function toggleSpeech(){
+voiceEnabled=!voiceEnabled;
+document.getElementById("voiceButton").textContent=
+voiceEnabled?"🔊 صدای نیکو روشن":"🔇 صدای نیکو خاموش";
+if(!voiceEnabled&&"speechSynthesis" in window){
+speechSynthesis.cancel();
+}
+}
+
+function startVoice(){
+const Recognition=window.SpeechRecognition||window.webkitSpeechRecognition;
+if(!Recognition){
+alert("مرورگر از تشخیص صدای فارسی پشتیبانی نمی‌کند.");
+return;
+}
+const recognition=new Recognition();
+recognition.lang="fa-IR";
+recognition.interimResults=false;
+recognition.onresult=event=>{
+input.value=event.results[0][0].transcript;
+sendMessage();
+};
+recognition.onerror=()=>{
+alert("دریافت صدا انجام نشد. دسترسی میکروفون را بررسی کن.");
+};
+recognition.start();
+}
+
+function clearMemory(){
+if(!confirm("آیا می‌خواهی تاریخچه گفتگو پاک شود؟"))return;
+history=[];
+localStorage.removeItem("niko_history");
+chat.innerHTML="";
+addMessage("سلام دوباره دوست من! ❤️ از نو شروع کنیم.","niko");
 }
 </script>
 </body>
